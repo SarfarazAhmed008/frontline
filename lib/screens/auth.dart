@@ -15,53 +15,92 @@ class _AuthState extends State<Auth> {
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  final _scaffoldKey = GlobalKey<ScaffoldState>();
-
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _smsController = TextEditingController();
   String _verificationId;
   final SmsAutoFill _autoFill = SmsAutoFill();
 
-
   bool _readOnly = false;
 
-  String authenticated = "";
-  int doctorId = 0;
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _autoFill.hint.then((value){
+      setState(() {
+        _phoneController.text = value;
+      });
+    });
 
+  }
 
   _loginWithOTP(BuildContext context) async{
     PhoneVerificationCompleted verificationCompleted =
         (PhoneAuthCredential phoneAuthCredential) async {
       await _auth.signInWithCredential(phoneAuthCredential);
-      // showSnackbar("Phone number automatically verified and user signed in: ${_auth.currentUser.uid}");
+      _storeSession(_phoneController.text);
+      Fluttertoast.showToast(
+          msg: "Phone number automatically verified. Signed in successfully",
+          toastLength: Toast.LENGTH_LONG,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.cyan,
+          textColor: Colors.white,
+          fontSize: 16.0
+      );
+      Navigator.push(context,
+          MaterialPageRoute(builder: (context) => Home()));
     };
     PhoneVerificationFailed verificationFailed =
         (FirebaseAuthException authException) {
-      // showSnackbar('Phone number verification failed. Code: ${authException.code}. Message: ${authException.message}');
           print( '${authException.message}');
+          Fluttertoast.showToast(
+              msg: "Phone number verification failed",
+              toastLength: Toast.LENGTH_SHORT,
+              gravity: ToastGravity.BOTTOM,
+              timeInSecForIosWeb: 1,
+              backgroundColor: Colors.cyan,
+              textColor: Colors.white,
+              fontSize: 16.0
+          );
     };
     PhoneCodeSent codeSent =
         (String verificationId, [int forceResendingToken]) async {
-      // showSnackbar('Please check your phone for the verification code.');
       _verificationId = verificationId;
+      Fluttertoast.showToast(
+          msg: "Please check your phone for the verification code.",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.cyan,
+          textColor: Colors.white,
+          fontSize: 16.0
+      );
+      showOTPAlertDialog(context);
     };
     PhoneCodeAutoRetrievalTimeout codeAutoRetrievalTimeout =
         (String verificationId) {
-      // showSnackbar("verification code: " + verificationId);
       _verificationId = verificationId;
     };
     try {
       await _auth.verifyPhoneNumber(
           phoneNumber: _phoneController.text,
-          timeout: const Duration(seconds: 5),
+          timeout: const Duration(seconds: 10),
           verificationCompleted: verificationCompleted,
           verificationFailed: verificationFailed,
           codeSent: codeSent,
           codeAutoRetrievalTimeout: codeAutoRetrievalTimeout);
 
-      // signInWithPhoneNumber();
-      showAlertDialog(context);
     } catch (e) {
+      Fluttertoast.showToast(
+          msg: "Failed",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.cyan,
+          textColor: Colors.white,
+          fontSize: 16.0
+      );
       throw Exception("Failed");
     }
   }
@@ -75,34 +114,50 @@ class _AuthState extends State<Auth> {
       );
 
       return (await _auth.signInWithCredential(credential)).user;
-
-      // showSnackbar("Successfully signed in UID: ${user.uid}");
     } catch (e) {
-      // showSnackbar("Failed to sign in: " + e.toString());
+      Fluttertoast.showToast(
+          msg: "Failed to sign in",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.cyan,
+          textColor: Colors.white,
+          fontSize: 16.0
+      );
       print("login failed");
     }
   }
 
+  showOTPAlertDialog(BuildContext context) {
 
-  showAlertDialog(BuildContext context) {
-
-    Widget continueButton = FlatButton(
+    Widget continueButton = TextButton(
       child: Text("Continue"),
       onPressed:  () {
+        print("continue");
         Navigator.of(context, rootNavigator: true).pop();
+        FocusScope.of(context).unfocus();
         signInWithPhoneNumber().then((User user){
           print(user.uid);
           setState(() {
             _smsController.text = "";
           });
+          _storeSession(_phoneController.text);
+          Fluttertoast.showToast(
+              msg: "Successfully signed in",
+              toastLength: Toast.LENGTH_SHORT,
+              gravity: ToastGravity.BOTTOM,
+              timeInSecForIosWeb: 1,
+              backgroundColor: Colors.cyan,
+              textColor: Colors.white,
+              fontSize: 16.0
+          );
           Navigator.push(context,
               MaterialPageRoute(builder: (context) => Home()));
         });
-
       },
     );
 
-    // set up the AlertDialog
+    // set up the OTPAlertDialog
     AlertDialog alert = AlertDialog(
       title: Text("OTP"),
       content:  TextField(
@@ -128,25 +183,18 @@ class _AuthState extends State<Auth> {
     );
   }
 
-
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    _autoFill.hint.then((value){
-      setState(() {
-        _phoneController.text = value;
-      });
-    });
-
-  }
-
-  @override
-  void dispose() {
-    // TODO: implement dispose
-    _phoneController.dispose();
-    _smsController.dispose();
-    super.dispose();
+  _storeSession(String phoneNumber) async{
+    if(phoneNumber.isNotEmpty){
+      final prefs = await SharedPreferences.getInstance();
+      prefs.setBool("isAuthenticated", true);
+      prefs.setString("phoneNumber", phoneNumber);
+      if(prefs.containsKey("isAuthenticated")){
+        print(prefs.getBool('isAuthenticated'));
+      }
+      if(prefs.containsKey("phoneNumber")){
+        print(prefs.getString('phoneNumber'));
+      }
+    }
   }
 
   Widget horizontalLine() => Padding(
@@ -165,7 +213,7 @@ class _AuthState extends State<Auth> {
         ScreenUtil(width: 750, height: 1334, allowFontScaling: true);
     return new Scaffold(
       backgroundColor: Colors.white,
-      resizeToAvoidBottomPadding: true,
+      // resizeToAvoidBottomPadding: true,
       body: Stack(
         fit: StackFit.expand,
         children: <Widget>[
@@ -173,8 +221,8 @@ class _AuthState extends State<Auth> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: <Widget>[
               Padding(
-                padding: EdgeInsets.only(top: 20.0),
-//                child: Image.asset("./asset/footer_top_bg.png"),
+                padding: EdgeInsets.only(top: 30.0),
+                child: Image.asset("./asset/front.jpg"),
               ),
               Expanded(
                 child: Container(),
@@ -184,11 +232,11 @@ class _AuthState extends State<Auth> {
           ),
           SingleChildScrollView(
             child: Padding(
-              padding: EdgeInsets.only(left: 28.0, right: 28.0, top: 120.0),
+              padding: EdgeInsets.only(left: 28.0, right: 28.0, top: 80.0),
               child: Column(
                 children: <Widget>[
                   SizedBox(
-                    height: ScreenUtil.getInstance().setHeight(180),
+                    height: ScreenUtil.getInstance().setHeight(300),
                   ),
 //                  FormCard(),
                   Container(
@@ -239,7 +287,6 @@ class _AuthState extends State<Auth> {
                                   _phoneController.text = await _autoFill.hint
                                 },
                               )
-
                             ),
                             controller: _phoneController,
                             readOnly: _readOnly,
@@ -298,4 +345,11 @@ class _AuthState extends State<Auth> {
     );
   }
 
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    _phoneController.dispose();
+    _smsController.dispose();
+    super.dispose();
+  }
 }

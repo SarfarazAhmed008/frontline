@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:frontline/screens/headline.dart';
 import 'package:frontline/widgets/drawer.dart';
@@ -35,7 +36,7 @@ class Home extends StatelessWidget{
               height: 10.0,
             ),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 InkWell(
                   onTap: () => print("tapped"),
@@ -105,8 +106,7 @@ class Home extends StatelessWidget{
               height: 10.0,
             ),
             Row(
-
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 InkWell(
                   onTap: () => print("tapped"),

@@ -2,7 +2,9 @@ import 'dart:convert';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:frontline/models/article.dart';
 import 'package:frontline/models/news.dart';
+import 'package:frontline/widgets/webview.dart';
 import 'package:http/http.dart' as http;
 
 class Headline extends StatefulWidget{
@@ -11,15 +13,22 @@ class Headline extends StatefulWidget{
 }
 
 class _HeadlineState extends State<Headline> {
-  final items = List<String>.generate(100, (i) => "Item $i");
-  Future<News> news;
+  ScrollController _scrollController = ScrollController();
+  List<Article> newsArticleList = [];
+  int pageNumber = 1;
+  bool initLoad = true;
+  bool lazyLoad = false;
 
-  Future<News> _fetchNews(String pageNumber) async {
-    final response = await http.get("https://newsapi.org/v2/everything?q=apple&pageSize=10&page="+ pageNumber +"&apiKey=1e8846630c8345848cbd2ffd19cc0380");
+  Future<List<Article>> _fetchNews(String pageNumber) async {
+    News news;
+    List<Article> articleList = [];
+    final response = await http.get("https://newsapi.org/v2/everything?q=apple&pageSize=5&page="+ pageNumber +"&apiKey=1e8846630c8345848cbd2ffd19cc0380");
 
     if (response.statusCode == 200) {
       print(response.body);
-      return News.fromJson(json.decode(response.body));
+      news = News.fromJson(json.decode(response.body));
+      articleList.addAll(news.articles);
+      return articleList;
     } else {
       throw Exception('Failed to fetch news');
     }
@@ -28,9 +37,28 @@ class _HeadlineState extends State<Headline> {
   @override
   void initState() {
     super.initState();
-    news = _fetchNews("10");
+    _fetchNews(pageNumber.toString()).then((value){
+      setState(() {
+        initLoad = false;
+        newsArticleList.addAll(value);
+      });
+    });
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels ==
+          _scrollController.position.maxScrollExtent) {
+        setState(() {
+          pageNumber++;
+          lazyLoad = true;
+        });
+        _fetchNews(pageNumber.toString()).then((value){
+          setState(() {
+            lazyLoad = false;
+            newsArticleList.addAll(value);
+          });
+        });
+      }
+    });
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -42,63 +70,70 @@ class _HeadlineState extends State<Headline> {
         centerTitle: true,
         backgroundColor: Colors.cyan,
       ),
-      body: FutureBuilder<News>(
-        future: news,
-        builder: (context, snapshot){
-          if(snapshot.connectionState != ConnectionState.done){
-            return Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.cyan),
-                strokeWidth: 3.0,
-              ),
-            );
-          }
-          if(snapshot.hasError){
-            //return error
-          }
-          News news = snapshot.data ?? [];
-          return ListView.builder(
-            itemCount: news.articles.length,
-            itemBuilder: (context, index) {
-              return InkWell(
-                onTap: ()=>print("tappp"),
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10.0),
-                    ),
-                    elevation: 5.0,
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Text(news.articles[index].title, style: TextStyle(fontSize: 12.0),softWrap: true,),
+      body: initLoad ? Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.cyan),
+          strokeWidth: 3.0,
+        ),
+      ) :
+      Scrollbar(
+        child: ListView.builder(
+          controller: _scrollController,
+          itemBuilder: (context, index) {
+            if(index == newsArticleList.length){
+              return Center(
+                child: SizedBox(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.cyan),
+                    strokeWidth: 3.0,
+                  ),
+                  height: 24,
+                  width: 24,
+                ),
+              );
+            }
+            return InkWell(
+              onTap: (){
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => WebViewWidget(newsArticleList[index].title, newsArticleList[index].url)));
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                  ),
+                  elevation: 5.0,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(newsArticleList[index].title, style: TextStyle(fontSize: 12.0),softWrap: true,),
+                        ),
+                        CachedNetworkImage(
+                          imageUrl: newsArticleList[index].urlToImage,
+                          placeholder: (context, url) => new CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.cyan),
+                            strokeWidth: 2.0,
                           ),
-                          CachedNetworkImage(
-                            imageUrl: news.articles[index].urlToImage,
-                            placeholder: (context, url) => new CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.cyan),
-                              strokeWidth: 2.0,
-                            ),
-                            errorWidget: (context, url, error) => new Icon(Icons.error),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Text(news.articles[index].description, style: TextStyle(fontSize: 10.0), softWrap: true,),
-                          )
-                        ],
-                      ),
+                          errorWidget: (context, url, error) => new Icon(Icons.error),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(newsArticleList[index].description, style: TextStyle(fontSize: 10.0), softWrap: true,),
+                        )
+                      ],
                     ),
                   ),
                 ),
-              );
-            },
-          );
-        }
+              ),
+            );
+          },
+          itemCount: newsArticleList.length + 1,
+        ),
       )
     );
   }

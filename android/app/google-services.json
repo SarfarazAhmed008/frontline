@@ -1,33 +1,41 @@
 {
   "project_info": {
-    "project_number": "134596385300",
-    "project_id": "front-7b7ca",
-    "storage_bucket": "front-7b7ca.appspot.com"
+    "project_number": "942800266887",
+    "project_id": "front-592a1",
+    "storage_bucket": "front-592a1.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:134596385300:android:d5c0bc32a40af6f4f86501",
+        "mobilesdk_app_id": "1:942800266887:android:2604e61b4e16fff5763a22",
         "android_client_info": {
           "package_name": "com.example.frontline"
         }
       },
       "oauth_client": [
         {
-          "client_id": "134596385300-d377m11ehf6jlg0l9c1pr59q10gngsu0.apps.googleusercontent.com",
+          "client_id": "942800266887-2ni2dbdp9ufd3j9nt83mo8u13qo2t13s.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.frontline",
+            "certificate_hash": "54f5ba919a459add8209331748c1fbfb439c1a76"
+          }
+        },
+        {
+          "client_id": "942800266887-hfqne3s9m0m3s15ser366jegtsb23dmk.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyBjzYk8gnp7uGbcZH7CDAVcdOtbIBXB5v4"
+          "current_key": "AIzaSyCWSkb6tYCpDhtqRMtKNTqqJX9nW-rVT4o"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "134596385300-d377m11ehf6jlg0l9c1pr59q10gngsu0.apps.googleusercontent.com",
+              "client_id": "942800266887-hfqne3s9m0m3s15ser366jegtsb23dmk.apps.googleusercontent.com",
               "client_type": 3
             }
           ]
