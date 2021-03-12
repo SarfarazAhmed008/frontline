@@ -1,7 +1,9 @@
 import 'dart:convert';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_link_preview/flutter_link_preview.dart';
 import 'package:frontline/models/article.dart';
 import 'package:frontline/models/news.dart';
 import 'package:frontline/widgets/webview.dart';
@@ -97,38 +99,63 @@ class _HeadlineState extends State<Headline> {
                 Navigator.push(context,
                     MaterialPageRoute(builder: (context) => WebViewWidget(newsArticleList[index].title, newsArticleList[index].url)));
               },
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
-                  elevation: 5.0,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(newsArticleList[index].title, style: TextStyle(fontSize: 12.0),softWrap: true,),
-                        ),
-                        CachedNetworkImage(
-                          imageUrl: newsArticleList[index].urlToImage,
-                          placeholder: (context, url) => new CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.cyan),
-                            strokeWidth: 2.0,
-                          ),
-                          errorWidget: (context, url, error) => new Icon(Icons.error),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(newsArticleList[index].description, style: TextStyle(fontSize: 10.0), softWrap: true,),
-                        )
-                      ],
-                    ),
-                  ),
+              child: FlutterLinkPreview(
+                url: newsArticleList[index].url,
+                bodyStyle: TextStyle(
+                  fontSize: 18.0,
                 ),
+                titleStyle: TextStyle(
+                  fontSize: 20.0,
+                  fontWeight: FontWeight.bold,
+                ),
+                showMultimedia: true,
+                builder: (info) {
+                  if (info is WebInfo) {
+                    return Padding(
+                      padding: const EdgeInsets.all(5.0),
+                      child: SizedBox(
+                        height: 350,
+                        child: Card(
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20.0)),
+                          clipBehavior: Clip.antiAlias,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (info.image != null)
+                                Expanded(
+                                  child: CachedNetworkImage(
+                                    width: double.maxFinite,
+                                    fit: BoxFit.cover,
+                                    imageUrl: newsArticleList[index].urlToImage,
+                                    placeholder: (context, url) => new CupertinoActivityIndicator(),
+                                    errorWidget: (context, url, error) => new Icon(Icons.error),
+                                  ),
+                                ),
+                              Padding(
+                                padding:
+                                const EdgeInsets.fromLTRB(10.0, 10.0, 10.0, 0),
+                                child: Text(
+                                  info.title,
+                                  style: TextStyle(
+                                    fontSize: 18.0,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              if (info.description != null)
+                                Padding(
+                                  padding: const EdgeInsets.all(10.0),
+                                  child: Text(info.description),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+                  return Container();
+                },
               ),
             );
           },
